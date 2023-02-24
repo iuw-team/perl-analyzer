@@ -1,5 +1,9 @@
 package com.example.hasltedtables;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.List;
 public class TableBuilder {
     TableBuilder(){
@@ -8,13 +12,21 @@ public class TableBuilder {
     private List<Token> operators;
     private List<Token> operands;
     public void start(){
-        String source = "while($x < 10){for(my $i = 0; $i < 10; $i++);}";
-        Tokenizer tokenizer = new Tokenizer(source);
-        while(tokenizer.hasToken()){
-            Token token = tokenizer.nextToken();
-
+        String source;
+        Tokenizer tokenizer;
+        try(BufferedReader reader = new BufferedReader(new FileReader("source.pl"))){
+            StringBuilder strText = new StringBuilder();
+            String line;
+            while((line = reader.readLine()) != null)
+                strText.append(line).append("\n");
+            source = strText.toString();
+            Parser parser = new Parser(source);
+            parser.parse();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
 
     }
 }

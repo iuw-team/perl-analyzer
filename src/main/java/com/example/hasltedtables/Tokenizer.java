@@ -8,28 +8,42 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Tokenizer {
     public static String TOKENS_RULES = "Tokens.json";
-    String source;
-    TokenRule lastRule;
-    List<TokenRule> rules;
-    List<Token> tokenStream;
+    private String source;
+    private TokenRule lastRule;
+    private List<TokenRule> rules;
+    private List<Token> tokenStream;
+    private Stack<Integer> lastTokens;
+    private int nextToken;
     Tokenizer(String source){
         this.source = source;
         rules = new ArrayList<>();
         tokenStream = new ArrayList<>();
+        nextToken = 0;
+        lastTokens = new Stack<>();
         addRules();
         splitTokens();
-
+        this.source = null;
     }
-    public boolean hasToken(){
-        return false;
+    public boolean hasNext(){
+        return nextToken < tokenStream.size();
     }
+    public boolean hasPrev(){return nextToken > 0;}
     public Token nextToken(){
-        return null;
+        Token result = tokenStream.get(nextToken);
+        nextToken += 1;
+        return result;
+    }
+    public void resetBack(){
+        nextToken -= 1;
+    }
+    public List<Token> getTokenStream(){
+        return this.tokenStream;
     }
     private void addRules(){
         try(BufferedReader reader = new BufferedReader(new FileReader(TOKENS_RULES))){
@@ -70,6 +84,26 @@ public class Tokenizer {
         if(lastRule.type() != Token.Type.Unknown)
             tokenStream.add(new Token(token, lastRule.type()));
     }
+    /**
+     *  Save current position of token stream
+     * */
+    public void freeze(){
+        lastTokens.push(nextToken);
+    }
+    /** Free last asked token position
+     * */
+    public void release(){
+        nextToken = lastTokens.pop();
+    }
+    /**
+     * make stack empty
+     * */
+    public void boost(){lastTokens.pop();}
+    public void refresh(){
+        this.release();
+        this.freeze();
+    }
+
     private void splitTokens(){
             int lastIndex = 0;
             int nextIndex;
@@ -85,8 +119,8 @@ public class Tokenizer {
                     lastIndex = nextIndex;
                 }
             }
-            for(Token token : tokenStream){
-                System.out.format("<%s>", token.getType());
-            }
+//            for(Token token : tokenStream){
+//                System.out.printf("<%s>", token.getType());
+//            }
     }
 }

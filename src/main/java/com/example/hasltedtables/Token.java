@@ -1,9 +1,9 @@
 package com.example.hasltedtables;
 
 public class Token {
-    public enum Type {StringInner, StringPlain, BracketCircle, BracketCurly, Keyword, Coma, Separator, Digits,
+    public enum Type {StringInner, StringPlain, BracketCircle, BracketCurly, BracketSquare, Keyword, Coma, Separator, Digits,
         Assignment, ComplexAssignment, ArrowLambda, ArrowLink, Arithmetic, Logical, Comparing, StringCmp, StringRep, StringCat, ArrayRange,
-        Variable,
+        Variable, FloatWord,
         Unknown
     };
     Token(String value, Type type){
