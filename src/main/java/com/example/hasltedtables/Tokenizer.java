@@ -87,8 +87,12 @@ public class Tokenizer {
     /**
      *  Save current position of token stream
      * */
-    public void freeze(){
+    public int freeze(){
         lastTokens.push(nextToken);
+        return nextToken;
+    }
+    public int mark(){
+        return (nextToken - 1);
     }
     /** Free last asked token position
      * */
@@ -97,13 +101,23 @@ public class Tokenizer {
     }
     /**
      * make stack empty
+     * @return last token in group (after freezing stage)
      * */
-    public void boost(){lastTokens.pop();}
+    public void boost(){
+        lastTokens.pop();
+    }
     public void refresh(){
         this.release();
         this.freeze();
     }
-
+    public Token[] getRange(int start, int end){
+        Token[] group = new Token[end + 1 - start];
+        int index = 0;
+        for(int i = start; i <= end; i++){
+            group[index] = tokenStream.get(i);
+        }
+        return group;
+    }
     private void splitTokens(){
             int lastIndex = 0;
             int nextIndex;

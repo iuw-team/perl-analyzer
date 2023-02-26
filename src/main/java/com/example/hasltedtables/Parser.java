@@ -1,12 +1,15 @@
 package com.example.hasltedtables;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.hasltedtables.Token.Type;
 
 public class Parser {
-    Tokenizer tokenStream;
-    String source;
+    private Tokenizer tokenStream;
+    private List<Statement> statements;
+    private String source;
+    private List<Statement> freeStatements;
     public static final int OpenCircle = 0;
     public static final int ClosedCircle = 1;
     public static final int OpenCurly = 2;
@@ -21,6 +24,7 @@ public class Parser {
     }
     public void parse(){
         tokenStream = new Tokenizer(this.source);
+        statements = new ArrayList<>();
         build();
     }
 
@@ -240,28 +244,10 @@ public class Parser {
         return result;
     }
     private boolean isUntilStatement(){
-        tokenStream.freeze();
-        boolean result = isKeyword("until") &&
-                isBracket(OpenCircle) && isExpression() && isBracket(ClosedCircle) && isBody();
-        if(!result)
-            tokenStream.release();
-        else {
-            tokenStream.boost();
-            System.out.println("UNTIL");
-        }
-        return result;
+        return isCondBodyStatement(Statement.Type.Until, "until");
     }
     private boolean isWhileStatement(){
-        tokenStream.freeze();
-        boolean result = isKeyword("while") &&
-                isBracket(OpenCircle) && isExpression() && isBracket(ClosedCircle) && isBody();
-        if(!result)
-            tokenStream.release();
-        else {
-            tokenStream.boost();
-            System.out.println("WHILE");
-        }
-        return result;
+        return isCondBodyStatement(Statement.Type.While, "while");
     }
     private boolean isForStatement(){
         tokenStream.freeze();
@@ -302,45 +288,78 @@ public class Parser {
         }
         return result;
     }
-    private boolean isIfHeader(){
-        tokenStream.freeze();
-        boolean result = isKeyword("if") && isBracket(OpenCircle) &&
-                        isExpression() && isBracket(ClosedCircle) && isBody();
-        if(!result)
+    private boolean isCondBodyStatement(Statement.Type type, String keyword){
+        int start = tokenStream.freeze();
+        int end;
+        boolean isStatement = isKeyword(keyword) && isBracket(OpenCircle) &&
+                              isExpression() && isBracket(ClosedCircle);
+        if(!isStatement){
             tokenStream.release();
-        else
+            freeStatements = null;
+            return false;
+        }
+        end = tokenStream.mark();
+        isStatement = isBody();
+        if(!isStatement){
+            tokenStream.release();
+            //after isBody freeStatements is null
+        }
+        else {
+            Statement self = new Statement(type, tokenStream.getRange(start, end));
+            self.add(freeStatements.get(0));
+            freeStatements = new ArrayList<>(1);
+            freeStatements.add(self);
             tokenStream.boost();
-        return result;
+        }
+        return isStatement;
+    }
+    private boolean isIfHeader(){
+        return isCondBodyStatement(Statement.Type.If, "if");
     }
     private boolean isElifPart(){
-        tokenStream.freeze();
-        boolean result = isKeyword("elsif") && isBracket(OpenCircle) &&
-                          isExpression() &&  isBracket(ClosedCircle) && isBody();
-        if(!result)
-            tokenStream.release();
-        else
-            tokenStream.boost();
+        boolean isElsif = isCondBodyStatement(Statement.Type.Elsif, "elsif");
+        if(isElsif){
+            List<Statement> saved = freeStatements;
+            isElifPart();
+            if(freeStatements != null)
+                saved.addAll(freeStatements);
+            freeStatements = saved;
+        }
         return true;
     }
     private boolean isElsePart(){
-        tokenStream.freeze();
-        boolean result = isKeyword("else") && isBody();
-        if(!result)
+        int start = tokenStream.freeze();
+        boolean isElse = isKeyword("else");
+        if(!isElse){
             tokenStream.release();
-        else
+            freeStatements = null;
+            return true;// always return true
+        }
+        int end = tokenStream.mark();
+        isElse = isBody();
+        if (!isElse) {
+            tokenStream.release();
+        } else {
+            Statement self = new Statement(Statement.Type.Else, tokenStream.getRange(start, end));
+            self.add(freeStatements.get(0));
+            freeStatements = new ArrayList<>(1);
+            freeStatements.add(self);
             tokenStream.boost();
+        }
         return true;
     }
     private boolean isIfStatement(){
-        tokenStream.freeze();
-        boolean result = isIfHeader() && isElifPart() && isElsePart();
-        if(!result)
-            tokenStream.release();
-        else {
-            tokenStream.boost();
-            System.out.println("IF");
+        Statement self;
+        boolean isCommonIf = isIfHeader();
+        if(isCommonIf){
+            self = new Statement(Statement.Type.CommonIf, null);
+            self.add(freeStatements.get(0));
+            if(isElifPart())
+                self.addAll(freeStatements);
+            if(isElsePart())
+                self.addAll(freeStatements);
         }
-        return result;
+        return isCommonIf;
     }
     private boolean isImport(){
         tokenStream.freeze();
@@ -375,5 +394,12 @@ public class Parser {
     }
     private void build(){
         isStatements();
+        if(tokenStream.hasNext())
+            System.out.println("Syntax error");
+//        while(tokenStream.hasNext()){
+//            isStatements();
+//            if(tokenStream.hasNext())
+//                tokenStream.nextToken();
+//        }
     }
 }

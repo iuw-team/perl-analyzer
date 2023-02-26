@@ -24,6 +24,7 @@ sub printWorld {
 if($i > 10){
     $x += 12;
 }
+print 1;
 print "\n", ('a'x3);
 if($i < 10){
 
