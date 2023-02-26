@@ -115,6 +115,7 @@ public class Tokenizer {
         int index = 0;
         for(int i = start; i <= end; i++){
             group[index] = tokenStream.get(i);
+            index += 1;
         }
         return group;
     }

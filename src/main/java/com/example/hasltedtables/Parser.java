@@ -2,6 +2,7 @@ package com.example.hasltedtables;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import static com.example.hasltedtables.Token.Type;
 
@@ -239,7 +240,6 @@ public class Parser {
             tokenStream.release();
         else {
             tokenStream.boost();
-            System.out.println("CALL");
         }
         return result;
     }
@@ -249,44 +249,82 @@ public class Parser {
     private boolean isWhileStatement(){
         return isCondBodyStatement(Statement.Type.While, "while");
     }
-    private boolean isForStatement(){
-        tokenStream.freeze();
-        boolean result = isKeyword("for") && isBracket(OpenCircle) &&
-                (isDeclaration() || isAssignment()) && isSeparator() &&
-                isExpression() && isSeparator() && isAssignment() && isBracket(ClosedCircle) &&
-                isBody();
-
-        if(!result)
-            tokenStream.release();
-        else {
-            tokenStream.boost();
-            System.out.println("FOR");
+    /**if freeStatements are not null add to `statement`'s children all freeStatements
+     * new freeStatements will be holds only this statement
+     * */
+    private void updateStatements(Statement statement){
+        List<Statement> list = new ArrayList<>(1);
+        if(freeStatements != null) {
+            statement.addAll(freeStatements);
         }
-        return result;
+        list.add(statement);
+        freeStatements = list;
+    }
+    private void resetStatements(){
+        freeStatements = null;
+    }
+    private boolean isForStatement(){
+//        int start = tokenStream.freeze();
+//        int end;
+//        boolean isForHeader =
+//        if(!isForHeader){
+//            tokenStream.release();
+//            freeStatements = null;
+//            return false;
+//        }
+//        end = tokenStream.mark();
+//        isForHeader = isBody();
+//        if(!isForHeader){
+//            tokenStream.release();
+//            //freeStatements is null
+//        }
+//        else {
+//            Statement self = new Statement(Statement.Type.For, tokenStream.getRange(start, end));
+//            updateStatements(self);
+//            tokenStream.boost();
+//        }
+//        return isForHeader;
+        return isVCondBodyStatement(Statement.Type.For, o-> {
+            return (isKeyword("for") && isBracket(OpenCircle) &&
+                    (isDeclaration() || isAssignment()) && isSeparator() &&
+                    isExpression() && isSeparator() && isAssignment() && isBracket(ClosedCircle));
+        });
     }
     private boolean isFuncDeclaration(){
-        tokenStream.freeze();
-        boolean result = isKeyword("sub") && isFloatWord() && isBody();
-        if(!result)
-            tokenStream.release();
-        else {
-            tokenStream.boost();
-            System.out.println("FUNC");
-        }
-        return result;
+        return isVCondBodyStatement(Statement.Type.Function, o -> isKeyword("sub") && isFloatWord());
     }
     private boolean isLineStatement(){
-        tokenStream.freeze();
-        boolean result =
-                (isAssignment() || isDeclaration() || isFuncCall() ||
-                isExpression()) &&  isSeparator();
-        if(!result)
+        return isSingleStatement(Statement.Type.Line, o->{
+            return  (isAssignment() || isDeclaration() || isFuncCall() ||
+                    isExpression()) &&  isSeparator();
+        });
+    }
+
+    /**
+     * @param cond (Object is always null)
+     */
+    private boolean isVCondBodyStatement(Statement.Type type, Function<Object, Boolean> cond){
+        int start = tokenStream.freeze();
+        int end;
+        boolean isValid = cond.apply(null);
+        Statement self;
+        if(!isValid){
             tokenStream.release();
-        else {
-            tokenStream.boost();
-            System.out.println("LINE");
+            freeStatements = null;
+            return false;
         }
-        return result;
+        end = tokenStream.mark();
+        isValid = isBody();
+        if(!isValid){
+            tokenStream.release();
+            //freeStatements are null yet
+        }
+        else {
+            self = new Statement(type, tokenStream.getRange(start, end));
+            updateStatements(self);
+            tokenStream.boost();
+        }
+        return isValid;
     }
     private boolean isCondBodyStatement(Statement.Type type, String keyword){
         int start = tokenStream.freeze();
@@ -295,7 +333,7 @@ public class Parser {
                               isExpression() && isBracket(ClosedCircle);
         if(!isStatement){
             tokenStream.release();
-            freeStatements = null;
+            freeStatements = null; //freeStatements should be always null after unlucky statement construction
             return false;
         }
         end = tokenStream.mark();
@@ -306,12 +344,26 @@ public class Parser {
         }
         else {
             Statement self = new Statement(type, tokenStream.getRange(start, end));
-            self.add(freeStatements.get(0));
-            freeStatements = new ArrayList<>(1);
-            freeStatements.add(self);
+            updateStatements(self);
             tokenStream.boost();
         }
         return isStatement;
+    }
+    private boolean isSingleStatement(Statement.Type type, Function<Object, Boolean> cond){
+        int start = tokenStream.freeze();
+        int end;
+        boolean isValid = cond.apply(null);
+        resetStatements();
+        if(!isValid){
+            tokenStream.release();
+        }
+        else {
+            end = tokenStream.mark();
+            var self = new Statement(type, tokenStream.getRange(start, end));
+            updateStatements(self);
+            tokenStream.boost();
+        }
+        return isValid;
     }
     private boolean isIfHeader(){
         return isCondBodyStatement(Statement.Type.If, "if");
@@ -341,9 +393,7 @@ public class Parser {
             tokenStream.release();
         } else {
             Statement self = new Statement(Statement.Type.Else, tokenStream.getRange(start, end));
-            self.add(freeStatements.get(0));
-            freeStatements = new ArrayList<>(1);
-            freeStatements.add(self);
+            updateStatements(self);
             tokenStream.boost();
         }
         return true;
@@ -351,48 +401,78 @@ public class Parser {
     private boolean isIfStatement(){
         Statement self;
         boolean isCommonIf = isIfHeader();
-        if(isCommonIf){
+        if (isCommonIf) {
             self = new Statement(Statement.Type.CommonIf, null);
             self.add(freeStatements.get(0));
-            if(isElifPart())
+            if(isElifPart() && (freeStatements != null))
                 self.addAll(freeStatements);
-            if(isElsePart())
+            if(isElsePart() && (freeStatements != null))
                 self.addAll(freeStatements);
+            updateStatements(self);
         }
         return isCommonIf;
     }
     private boolean isImport(){
-        tokenStream.freeze();
-        boolean result = isKeyword("use") && isFloatWord() && isSeparator();
-        if(!result)
-            tokenStream.release();
-        else
-            tokenStream.boost();
-        return result;
+        return isSingleStatement(Statement.Type.Import, o->{
+            return isKeyword("use") && isFloatWord() && isSeparator();
+        });
     }
     private boolean isStatements(){
-        boolean result = (isIfStatement() || isUntilStatement()
+        boolean hasStatement = (isIfStatement() || isUntilStatement()
                 || isWhileStatement() || isForStatement() ||
-                isLineStatement() || isFuncDeclaration() || isImport()) && isStatements();
+                isLineStatement() || isFuncDeclaration() || isImport());
+        if(hasStatement){
+            List<Statement> group = new ArrayList<>(freeStatements);
+            isStatements();
+            if(freeStatements != null)
+                group.addAll(freeStatements);
+            freeStatements = group;
+        }
         return true;
     }
     /**
      * can change tokenStream
      * */
     private boolean isBody(){
-        tokenStream.freeze();
-        boolean result = isBracket(OpenCurly) && isStatements() && isBracket(ClosedCurly);
+        int start = tokenStream.freeze();
+        int end;
+        Statement self;
+        boolean hasBody;
 
-        if(!result){
-            result = isSeparator();
+        resetStatements();
+        hasBody = isBracket(OpenCurly) && isStatements();
+        if(!hasBody){
+            tokenStream.refresh();
+            hasBody = isSeparator();
+            freeStatements = null;
+            if(!hasBody) {
+                tokenStream.release();
+            }
+            else {
+                int index = tokenStream.mark();
+                self = new Statement(Statement.Type.Body, tokenStream.getRange(index, index));
+                updateStatements(self);
+                tokenStream.boost();
+            }
+            return hasBody;
         }
-        if(!result)
+        hasBody = isBracket(ClosedCurly);
+        end = tokenStream.mark();
+        if(!hasBody){
+            freeStatements = null;
             tokenStream.release();
-        else
+        }
+        else {
+            var tokens = List.of(tokenStream.getRange(start, start)[0],
+                                 tokenStream.getRange(end, end)[0]);
+            self = new Statement(Statement.Type.Body, tokens.toArray(new Token[0]));
+            updateStatements(self);
             tokenStream.boost();
-        return result;
+        }
+        return hasBody;
     }
     private void build(){
+        resetStatements();
         isStatements();
         if(tokenStream.hasNext())
             System.out.println("Syntax error");

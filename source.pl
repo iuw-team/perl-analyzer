@@ -1,6 +1,8 @@
 # Path: main.pl
 #!/usr/bin/env perl
-
+if ($x < 11){
+    my %x = 11;
+}
 use strict;
 use warnings;
 my $value = 0;
