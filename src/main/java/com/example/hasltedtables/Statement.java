@@ -5,7 +5,7 @@ import java.util.List;
 
 //comments is skipped
 public class Statement {
-    enum Type {For, While, Until, CommonIf, If, Elsif, Else, Import, Line, Function, Body};
+    public enum Type {For, While, Until, CommonIf, If, Elsif, Else, Import, Line, Function, Body};
     private Type type;
     private Token[] self;
     private List<Statement> children;

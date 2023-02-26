@@ -1,7 +1,21 @@
 # Path: main.pl
 #!/usr/bin/env perl
-if ($x < 11){
-    my %x = 11;
+if (($x < 11) || ($y > 11)){
+    my $x = 11;
+    if($y < 11 && $z > 43){
+        print"Hello World";
+    }
+}
+else;
+
+for(my $z = 11; $z > 4; $z -= 4){
+    print$z;
+}
+until(true){
+    my @array = "fdsa";
+}
+while(printWorld() < 11){
+       %hashTable = "New hashTable";
 }
 use strict;
 use warnings;

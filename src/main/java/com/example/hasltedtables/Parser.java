@@ -25,10 +25,12 @@ public class Parser {
     }
     public void parse(){
         tokenStream = new Tokenizer(this.source);
-        statements = new ArrayList<>();
+        statements = null;
         build();
     }
-
+    public List<Statement> getStatements(){
+        return statements; //changed by Constructor invoking
+    }
     private boolean isSeparator(){
         if(!tokenStream.hasNext())
             return false;
@@ -206,9 +208,10 @@ public class Parser {
     }
     private boolean isExpression(){
         tokenStream.freeze();
-        boolean result = isExpValue() && isExpOperator() && isExpression() ||
-                refreshStream() && isBracket(OpenCircle) && isExpression() && isBracket(ClosedCircle) && isExpOperator() && isExpression() ||
+        boolean result =
+                isBracket(OpenCircle) && isExpression() && isBracket(ClosedCircle) && isExpOperator() && isExpression() ||
                 refreshStream() && isBracket(OpenCircle) && isExpression() && isBracket(ClosedCircle) ||
+                refreshStream() && isExpValue() && isExpOperator() && isExpression() ||
                 refreshStream() && isExpValue();
         if(!result)
             tokenStream.release();
@@ -264,26 +267,6 @@ public class Parser {
         freeStatements = null;
     }
     private boolean isForStatement(){
-//        int start = tokenStream.freeze();
-//        int end;
-//        boolean isForHeader =
-//        if(!isForHeader){
-//            tokenStream.release();
-//            freeStatements = null;
-//            return false;
-//        }
-//        end = tokenStream.mark();
-//        isForHeader = isBody();
-//        if(!isForHeader){
-//            tokenStream.release();
-//            //freeStatements is null
-//        }
-//        else {
-//            Statement self = new Statement(Statement.Type.For, tokenStream.getRange(start, end));
-//            updateStatements(self);
-//            tokenStream.boost();
-//        }
-//        return isForHeader;
         return isVCondBodyStatement(Statement.Type.For, o-> {
             return (isKeyword("for") && isBracket(OpenCircle) &&
                     (isDeclaration() || isAssignment()) && isSeparator() &&
@@ -472,14 +455,14 @@ public class Parser {
         return hasBody;
     }
     private void build(){
-        resetStatements();
-        isStatements();
-        if(tokenStream.hasNext())
-            System.out.println("Syntax error");
 //        while(tokenStream.hasNext()){
-//            isStatements();
+            resetStatements();
+            isStatements();
+            if(!tokenStream.hasNext())
+                statements = freeStatements;
+
 //            if(tokenStream.hasNext())
-//                tokenStream.nextToken();
-//        }
+//                System.out.println("Syntax error!");
+//            else
     }
 }

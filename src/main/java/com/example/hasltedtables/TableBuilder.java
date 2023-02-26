@@ -13,7 +13,6 @@ public class TableBuilder {
     private List<Token> operands;
     public void start(){
         String source;
-        Tokenizer tokenizer;
         try(BufferedReader reader = new BufferedReader(new FileReader("source.pl"))){
             StringBuilder strText = new StringBuilder();
             String line;
@@ -22,6 +21,13 @@ public class TableBuilder {
             source = strText.toString();
             Parser parser = new Parser(source);
             parser.parse();
+            List<Statement> statements = parser.getStatements();
+            if(statements == null)
+                System.out.println("Syntax error");
+            else {
+                for(Statement piece : statements)
+                    System.out.println(piece.type());
+            }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
