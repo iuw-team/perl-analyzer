@@ -391,6 +391,7 @@ public class Parser {
                 self.addAll(freeStatements);
             if(isElsePart() && (freeStatements != null))
                 self.addAll(freeStatements);
+            resetStatements();
             updateStatements(self);
         }
         return isCommonIf;

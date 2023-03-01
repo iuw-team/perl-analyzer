@@ -7,9 +7,20 @@ if (($x < 11) || ($y > 11)){
     }
 }
 else;
-
 for(my $z = 11; $z > 4; $z -= 4){
     print$z;
+    if(($x > 10) && true){
+        if(getHugeNumber()){
+            while(true){
+                until(false){
+                    print "Hello" + "World";
+                    print "Mu" +
+                    "Name " + "$hello";
+                }
+
+            }
+        }
+    }
 }
 until(true){
     my @array = "fdsa";
