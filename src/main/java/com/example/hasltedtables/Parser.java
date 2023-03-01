@@ -41,6 +41,16 @@ public class Parser {
             return false;
         return (tokenStream.nextToken().getType() == Type.Coma);
     }
+    private boolean isLambdaArrow(){
+        if(!tokenStream.hasNext())
+            return false;
+        return (tokenStream.nextToken()).getType() == Type.ArrowLambda;
+    }
+    private boolean isPointerArrow(){
+        if(!tokenStream.hasNext())
+            return false;
+        return (tokenStream.nextToken()).getType() == Type.ArrowLink;
+    }
     private boolean isKeyword(String value){
         if(!tokenStream.hasNext())
             return false;
@@ -100,7 +110,7 @@ public class Parser {
         if(result){
             Token token = tokenStream.nextToken();
             result = ((token.getType() == Type.Assignment) || (token.getType() == Type.ComplexAssignment)) &&
-                     isExpression();
+                             (isExpression() || isInitialization());
         }
         if(!result)
             tokenStream.release();
@@ -112,12 +122,37 @@ public class Parser {
     private boolean isAssignable(){
         return isExpression();
     }
-    private boolean isInitialization(){
+    private boolean isArrayInitialization(){
+        tokenStream.freeze();
+        boolean result = isBracket(OpenCircle) && isFuncParams() && isBracket(ClosedCircle);
+        if(result)
+            tokenStream.boost();
+        else
+            tokenStream.refresh();
+        return result;
+    }
+
+    //todo: complete
+    private boolean isTableInitialization(){
         return false;
+    }
+    private boolean isInitialization(){
+        return isArrayInitialization() || isTableInitialization();
+    }
+    private boolean isStorageClass(){
+        tokenStream.freeze();
+        boolean isCorrect = isKeyword("my") ||
+                            refreshStream() && isKeyword("our") ||
+                            refreshStream() && isKeyword("state");
+        if(isCorrect)
+            tokenStream.boost();
+        else
+            tokenStream.release();
+        return isCorrect;
     }
     private boolean isDeclaration(){
         tokenStream.freeze();
-        boolean result = isKeyword("my") && isVariable() && tokenStream.hasNext();
+        boolean result = isStorageClass() && isVariable() && tokenStream.hasNext();
         if(result){
             tokenStream.freeze();
             Token token = tokenStream.nextToken();

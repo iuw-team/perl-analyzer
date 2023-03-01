@@ -1,5 +1,8 @@
 # Path: main.pl
 #!/usr/bin/env perl
+my $longString = "Hello $friend! How your $other";
+my @animals = ("camel", "llama", "owl");
+@array = ("FirstGuy", $x + printWorld() );
 if (($x < 11) || ($y > 11)){
     my $x = 11;
     if($y < 11 && $z > 43){
@@ -31,7 +34,6 @@ while(printWorld() < 11){
 use strict;
 use warnings;
 my $value = 0;
-#my @animals = ("camel", "llama", "owl");
 print "\n$animals[$#animals]";
 #my %fruit_color = (
 #    apple  => "red",
@@ -60,3 +62,4 @@ if($i < 10){
 } else {
 
 }
+sub CoolFunc;
