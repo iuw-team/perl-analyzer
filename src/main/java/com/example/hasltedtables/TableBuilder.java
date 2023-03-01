@@ -25,8 +25,14 @@ public class TableBuilder {
             if(statements == null)
                 System.out.println("Syntax error");
             else {
-                for(Statement piece : statements)
+                for(Statement piece : statements){
                     System.out.println(piece.type());
+                    Token[] tokens = piece.getSelf();
+                    if(tokens == null)
+                        continue;
+                    for(Token token : tokens)
+                        System.out.println(token.getValue());
+                }
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);

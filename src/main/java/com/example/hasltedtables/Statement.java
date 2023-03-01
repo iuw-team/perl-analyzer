@@ -21,6 +21,9 @@ public class Statement {
         for(var child : children)
             add(child);
     }
+    public Token[] getSelf(){
+        return self;
+    }
     public Type type(){return type;}
     public List<Statement> children(){
         return this.children;
