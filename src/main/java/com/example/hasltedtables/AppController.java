@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class AppController {
 public static Stage stage;
-private boolean isActive = false;
 private TableBuilder tableBuilder;
 @FXML
 private Button btnInitAnalyze;
@@ -56,7 +55,9 @@ private TextField editOperandDict;
 @FXML
 private TextField editOperatorDict;
 @FXML
-private TableView<TableRow> tableGlobal;
+private TableView<TableRow> tableRight;
+@FXML
+private TableView<TableRow> tableLeft;
 @FXML
 void onBtnStartClicked(MouseEvent event) {
     tableBuilder.start();
@@ -74,53 +75,50 @@ void onBtnStartClicked(MouseEvent event) {
     }
 }
 private class TableRow {
-    private String operator;
-    private Integer operatorCnt;
-    private String operand;
-    private Integer operandCnt;
-    TableRow(String operand, Integer operandCnt){
-        this.operand = operand;
-        this.operandCnt = operandCnt;
+    final private String string;
+    final private Integer number;
+    TableRow(String string, Integer number){
+        this.string = string;
+        this.number = number;
     }
-    public void add(String operator, Integer operatorCnt){
-        this.operator = operator;
-        this.operatorCnt = operatorCnt;
-    }
-    public TableRow update(String operator, Integer operatorCnt){
-        this.operator = operator;
-        this.operatorCnt = operatorCnt;
-        return this;
-    }
+
 }
 private void updateFormContent(){
     var operators = tableBuilder.getOperators();
     var operands = tableBuilder.getOperands();
-    List<TableRow> list = new ArrayList<TableRow>();
-    operands.forEach((key, value) -> list.add(new TableRow(key, value)));
-    AtomicInteger index = new AtomicInteger(0);
-    operators.forEach((key, value) -> {
-        if(index.get() > list.size())
-            list.add(new TableRow("", 0).update(key, value));
-        else
-            list.get(index.get()).add(key, value);
-        index.set(index.get() + 1);
-    });
-    tableGlobal.setItems(FXCollections.observableArrayList(list));
-    clmOperators.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(entity.getValue().operator));
-    clmOperatorsCnt.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(String.valueOf(entity.getValue().operatorCnt)));
-    clmOperands.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(entity.getValue().operand));
-    clmOperandsCnt.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(String.valueOf(entity.getValue().operandCnt)));
-
+    List<TableRow> listRight = new ArrayList<>();
+    List<TableRow> listLeft = new ArrayList<>();
+    operands.forEach((key, value) -> listRight.add(new TableRow(key, value)));
+    operators.forEach((key, value) -> listLeft.add(new TableRow(key, value)));
+    tableLeft.setItems(FXCollections.observableArrayList(listLeft));
+    tableRight.setItems(FXCollections.observableArrayList(listRight));
+    clmOperators.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(entity.getValue().string));
+    clmOperands.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(entity.getValue().string));
+    clmOperatorsCnt.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(String.valueOf(entity.getValue().number)));
+    clmOperandsCnt.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(String.valueOf(entity.getValue().number)));
+    updateParams(operators, operands);
 }
-private void fillOperators(Map<String, Integer> operators){
-
+private void updateParams(Map<String, Integer> operators, Map<String, Integer> operands){
+    AtomicInteger operandCnt = new AtomicInteger(0);
+    AtomicInteger operatorCnt = new AtomicInteger(0);
+    int dictSize = operators.size() + operands.size();
+    int length;
+    editOperandDict.setText(String.valueOf(operands.size()));
+    editOperatorDict.setText(String.valueOf(operators.size()));
+    editAppDict.setText(String.valueOf(dictSize));
+    operands.forEach((key, value) -> operandCnt.set(operandCnt.get() + value));
+    editCommonOperands.setText(String.valueOf(operandCnt.get()));
+    operators.forEach((key,value)-> operatorCnt.set(operatorCnt.get() + value));
+    length = operandCnt.get() + operatorCnt.get();
+    editCommonOperators.setText(String.valueOf(operatorCnt.get()));
+    editAppLength.setText(String.valueOf(length));
+    editAppVolume.setText(String.format("%.3f", Math.log(dictSize)/Math.log(2)*length));
 }
 @FXML
 void onOpenFileChanged(ActionEvent event) {
     FileChooser fileChooser = new FileChooser();
     File file = fileChooser.showOpenDialog(stage);
     if(file != null && file.canRead()){
-        isActive = true;
         btnInitAnalyze.setDisable(false);
         String content = getFileContent(file);
         tableBuilder = new TableBuilder();

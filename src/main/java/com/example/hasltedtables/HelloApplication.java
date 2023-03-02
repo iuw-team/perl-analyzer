@@ -13,6 +13,8 @@ public class HelloApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("hello-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 600, 400);
         AppController.stage = stage;
+        stage.setMaxWidth(600);
+        stage.setMinWidth(600);
         stage.setTitle("Program Analyzer 3000");
         stage.setScene(scene);
         stage.show();
