@@ -83,16 +83,17 @@ public class Parser {
             return false;
         tokenStream.freeze();
         Token token = tokenStream.nextToken();
+        Token.Type type = token.getType();
         boolean result = false;
         switch (id){
-            case OpenCircle -> result = (token.getType() == Type.BracketCircle) && (token.getValue().equals("("));
+            case OpenCircle -> result = (type == Type.BracketCircle) && (token.getValue().equals("("));
             case ClosedCircle -> result = (token.getType() == Type.BracketCircle) && (token.getValue().equals(")"));
-            case OpenCurly -> result = (token.getType() == Type.BracketCurly) && (token.getValue().equals("{"));
-            case ClosedCurly -> result = (token.getType() == Type.BracketCurly) && (token.getValue().equals("}"));
-            case OpenSquare -> result = (token.getType() == Type.BracketSquare) && (token.getValue().equals("["));
-            case ClosedSquare -> result = (token.getType() == Type.BracketSquare) && (token.getValue().equals("]"));
-            case OpenTriangle -> result = (token.getType() == Type.Comparing) && (token.getValue().equals("<"));
-            case CloseTriangle -> result = (token.getType() == Type.Comparing) && (token.getValue().equals(">"));
+            case OpenCurly -> result = (type == Type.BracketCurly) && (token.getValue().equals("{"));
+            case ClosedCurly -> result = (type == Type.BracketCurly) && (token.getValue().equals("}"));
+            case OpenSquare -> result = (type == Type.BracketSquare) && (token.getValue().equals("["));
+            case ClosedSquare -> result = (type == Type.BracketSquare) && (token.getValue().equals("]"));
+            case OpenTriangle -> result = (type == Type.Comparing || type == Type.BracketTriangle) && (token.getValue().equals("<"));
+            case CloseTriangle -> result = (type == Type.Comparing || type == Type.BracketTriangle) && (token.getValue().equals(">"));
         }
         if(!result)
             tokenStream.release();
@@ -179,8 +180,13 @@ public class Parser {
         boolean isFile = isBracket(OpenTriangle) && isVariable() && isBracket(CloseTriangle);
         if(!isFile)
             isFile = refreshStream() && isBracket(OpenTriangle) && isFloatWord() && isBracket(CloseTriangle);
-        if(isFile)
+        if(isFile){
+            tokenStream.refresh();
+            tokenStream.nextToken().setType(Type.BracketTriangle);
+            tokenStream.nextToken();
+            tokenStream.nextToken().setType(Type.BracketTriangle);
             tokenStream.boost();
+        }
         else
             tokenStream.release();
         return isFile;

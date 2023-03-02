@@ -28,11 +28,11 @@ private Button btnInitAnalyze;
 @FXML
 private TableColumn<TableRow, String> clmOperators;
 @FXML
-private TableColumn<TableRow, String> clmOperatorsCnt;
+private TableColumn<TableRow, Integer> clmOperatorsCnt;
 @FXML
 private TableColumn<TableRow, String> clmOperands;
 @FXML
-private TableColumn<TableRow, String> clmOperandsCnt;
+private TableColumn<TableRow, Integer> clmOperandsCnt;
 
 @FXML
 private TextField editAppDict;
@@ -94,8 +94,8 @@ private void updateFormContent(){
     tableRight.setItems(FXCollections.observableArrayList(listRight));
     clmOperators.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(entity.getValue().string));
     clmOperands.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(entity.getValue().string));
-    clmOperatorsCnt.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(String.valueOf(entity.getValue().number)));
-    clmOperandsCnt.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(String.valueOf(entity.getValue().number)));
+    clmOperatorsCnt.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(entity.getValue().number));
+    clmOperandsCnt.setCellValueFactory(entity -> new ReadOnlyObjectWrapper<>(entity.getValue().number));
     updateParams(operators, operands);
 }
 private void updateParams(Map<String, Integer> operators, Map<String, Integer> operands){

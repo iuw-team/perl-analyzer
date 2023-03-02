@@ -76,6 +76,10 @@ public class TableBuilder {
                     if(value.equals("{"))
                         saveOperator("{ }");
                 }
+            case BracketTriangle -> {
+                    if(value.equals("<"))
+                        saveOperator("< >");
+                }
                 case BracketSquare -> {
                     if(value.equals("["))
                         saveOperator("[ ]");
