@@ -16,7 +16,7 @@ my $x = @letters;
 my $y = getHugeNumber();
 my $value = shift @letters;
 unshift @letters, @other;
-my $longString = "Hello userName! How your $other";
+my $longString = "Hello $userName! How your $other";
 my @animals = ("camel", "llama", "owl");
 @array = ("FirstGuy", $x + printWorld() );
 if (($x < 11) || ($y > 11)){

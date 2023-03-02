@@ -1,16 +1,110 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.VBox?>
-
+<?import javafx.scene.Cursor?>
 <?import javafx.scene.control.Button?>
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.hasltedtables.HelloController">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-    </padding>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Pane?>
 
-    <Label fx:id="welcomeText"/>
-    <Button text="Hello!" onAction="#onHelloButtonClick"/>
-</VBox>
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.hasltedtables.AppController">
+   <children>
+      <BorderPane prefHeight="400.0" prefWidth="600.0">
+         <top>
+            <MenuBar BorderPane.alignment="CENTER">
+              <menus>
+                <Menu mnemonicParsing="false" text="File">
+                  <items>
+                        <MenuItem mnemonicParsing="false" onAction="#onOpenFileChanged" text="Open File" />
+                    <MenuItem mnemonicParsing="false" onAction="#onProgramExit" text="Exit" />
+                  </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Help">
+                  <items>
+                    <MenuItem mnemonicParsing="false" text="About" />
+                  </items>
+                </Menu>
+              </menus>
+            </MenuBar>
+         </top>
+         <bottom>
+            <SplitPane dividerPositions="0.5" orientation="VERTICAL" prefHeight="373.0" prefWidth="601.0" BorderPane.alignment="CENTER">
+              <items>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="141.0" prefWidth="599.0">
+                     <children>
+                        <Pane layoutX="21.0" prefHeight="58.0" prefWidth="148.0">
+                           <children>
+                              <TextField fx:id="editOperandDict" alignment="CENTER" editable="false" layoutX="-1.0" layoutY="30.0" prefHeight="26.0" prefWidth="150.0" text="-" />
+                              <Label alignment="CENTER" layoutY="9.0" prefHeight="23.0" prefWidth="148.0" text="Словарь операндов" textAlignment="CENTER" />
+                           </children>
+                        </Pane>
+                        <Button fx:id="btnInitAnalyze" disable="true" layoutX="240.0" layoutY="47.0" mnemonicParsing="false" onMouseReleased="#onBtnStartClicked" prefHeight="31.0" prefWidth="121.0" text="Анализировать">
+                           <cursor>
+                              <Cursor fx:constant="HAND" />
+                           </cursor>
+                        </Button>
+                        <Pane layoutX="20.0" layoutY="48.0" prefHeight="58.0" prefWidth="149.0">
+                           <children>
+                              <TextField fx:id="editOperatorDict" alignment="CENTER" editable="false" layoutX="-1.0" layoutY="30.0" prefHeight="26.0" prefWidth="149.0" text="-" />
+                              <Label alignment="CENTER" layoutY="9.0" prefHeight="23.0" prefWidth="150.0" text="Словарь операторов" textAlignment="CENTER" />
+                           </children>
+                        </Pane>
+                        <Pane layoutX="21.0" layoutY="122.0" prefHeight="58.0" prefWidth="154.0">
+                           <children>
+                              <TextField fx:id="editAppDict" alignment="CENTER" editable="false" layoutX="-1.0" layoutY="30.0" prefHeight="26.0" prefWidth="149.0" text="-" />
+                              <Label alignment="CENTER" layoutY="9.0" prefHeight="23.0" prefWidth="159.0" text="Словарь программы" textAlignment="CENTER" />
+                           </children>
+                        </Pane>
+                        <Pane layoutX="423.0" layoutY="122.0" prefHeight="58.0" prefWidth="164.0">
+                           <children>
+                              <TextField fx:id="editAppLength" alignment="CENTER" editable="false" layoutX="-1.0" layoutY="30.0" prefHeight="26.0" prefWidth="150.0" text="-" />
+                              <Label alignment="CENTER" layoutY="9.0" prefHeight="23.0" prefWidth="148.0" text="Длина программы" textAlignment="CENTER" />
+                           </children>
+                        </Pane>
+                        <Pane layoutX="218.0" layoutY="122.0" prefHeight="58.0" prefWidth="164.0">
+                           <children>
+                              <TextField fx:id="editAppVolume" alignment="CENTER" editable="false" layoutX="-1.0" layoutY="30.0" prefHeight="26.0" prefWidth="163.0" text="-" />
+                              <Label alignment="CENTER" layoutX="2.0" layoutY="9.0" prefHeight="23.0" prefWidth="159.0" text="Объём программы" textAlignment="CENTER" />
+                           </children>
+                        </Pane>
+                        <Pane layoutX="423.0" layoutY="4.0" prefHeight="58.0" prefWidth="148.0">
+                           <children>
+                              <TextField fx:id="editCommonOperands" alignment="CENTER" editable="false" layoutX="-1.0" layoutY="30.0" prefHeight="26.0" prefWidth="150.0" text="-" />
+                              <Label alignment="CENTER" layoutX="-11.0" layoutY="3.0" prefHeight="23.0" prefWidth="172.0" text="Общее число операндов" textAlignment="CENTER" />
+                           </children>
+                        </Pane>
+                        <Pane layoutX="423.0" layoutY="50.0" prefHeight="58.0" prefWidth="149.0">
+                           <children>
+                              <TextField fx:id="editCommonOperators" alignment="CENTER" editable="false" layoutX="-1.0" layoutY="30.0" prefHeight="26.0" prefWidth="149.0" text="-" />
+                              <Label alignment="CENTER" layoutX="-12.0" layoutY="9.0" prefHeight="23.0" prefWidth="174.0" text="Общее число операторов" textAlignment="CENTER" />
+                           </children>
+                        </Pane>
+                        <Separator layoutX="-3.0" layoutY="127.0" prefHeight="0.0" prefWidth="601.0" />
+                     </children>
+                  </AnchorPane>
+                <AnchorPane minHeight="180.0" minWidth="0.0" prefHeight="180.0" prefWidth="274.0">
+                     <children>
+                        <TableView fx:id="tableGlobal" layoutX="76.0" layoutY="14.0" prefHeight="182.0" prefWidth="598.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                          <columns>
+                            <TableColumn fx:id="clmOperators" editable="false" prefWidth="170.0" text="Уникальные операторы" />
+                            <TableColumn fx:id="clmOperatorsCnt" editable="false" prefWidth="127.0" text="Кол-во" />
+                              <TableColumn fx:id="clmOperands" editable="false" prefWidth="168.0" text="Уникальные операнды" />
+                              <TableColumn fx:id="clmOperandsCnt" editable="false" prefWidth="132.0" text="Кол-во" />
+                          </columns>
+                        </TableView>
+                     </children>
+                  </AnchorPane>
+              </items>
+            </SplitPane>
+         </bottom>
+      </BorderPane>
+   </children>
+</AnchorPane>

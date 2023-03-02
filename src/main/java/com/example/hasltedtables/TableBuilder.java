@@ -2,10 +2,6 @@ package com.example.hasltedtables;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,10 +11,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class TableBuilder {
-
+    private String source;
+    private String lastStatement;
+    private boolean isCompleted;
     TableBuilder(){
         operands = new HashMap<>();
         operators = new HashMap<>();
+        isCompleted = false;
     }
     private Map<String, Integer> operators;
     private Map<String, Integer> operands;
@@ -70,15 +69,15 @@ public class TableBuilder {
                 }
                 case BracketCircle -> {
                     if(value.equals("("))
-                        saveOperator("(@@value)");
+                        saveOperator("( )");
                 }
                 case BracketCurly -> {
                     if(value.equals("{"))
-                        saveOperator("{@@index}");
+                        saveOperator("{ }");
                 }
                 case BracketSquare -> {
                     if(value.equals("["))
-                        saveOperator("[@@index]");
+                        saveOperator("[ ]");
                 }
                 case Keyword -> {
                          Stream.of("last", "redo", "next", "return")
@@ -95,7 +94,7 @@ public class TableBuilder {
                     if(isSystemKeyword(value))
                         saveOperand(value);
                     else
-                        saveOperand(value + "()");
+                        saveOperator(value);
                 }
         }
     }
@@ -104,18 +103,18 @@ public class TableBuilder {
         Token[] self = piece.getSelf();
             switch(piece.type()){
                 case For -> {
-                    operator = "for(;;)";
+                    operator = "for";
                     for(int i = 2; i < self.length - 1; i++)
                         if(!self[i].getValue().equals(";"))
                             dispatchToken(self[i]);
                 }
                 case While -> {
-                    operator = "while()";
+                    operator = "while";
                     for(int i = 2; i < self.length - 1;i++)
                         dispatchToken(self[i]);
                 }
                 case Until -> {
-                    operator = "until()";
+                    operator = "until";
                     for(int i = 2; i < self.length - 1; i++)
                         dispatchToken(self[i]);
                 }
@@ -129,11 +128,16 @@ public class TableBuilder {
                 case Else -> {}
                 case Import -> {}
                 case Line -> {
-                    for (Token token : self)
-                        dispatchToken(token);
+                    dispatchToken(self[0]);
+                    if(self.length > 1){
+                        int index = self[0].getType() == Token.Type.FloatWord && self[1].getValue().equals("(") ? 2 : 1;
+                        for(int i = index; index < self.length; index += 1)
+                            dispatchToken(self[index]);
+                    }
                 }
                 case Function -> {
                     operator = self[1].getValue();//the name of function self; no token to dispatch
+                    saveOperand(operator);
                 }
                 case Body -> {
                     if(self[0].getType() == Token.Type.Separator)
@@ -147,39 +151,48 @@ public class TableBuilder {
         for(Statement child : piece.children())
             dispatchStatement(child);
     }
+    public void setSource(String source){
+        this.source = source;
+    }
+    public Map<String, Integer> getOperators(){
+        return this.operators;
+    }
+    public Map<String, Integer> getOperands(){
+        return this.operands;
+    }
+    public boolean isCompleted(){
+        return isCompleted;
+    }
+    private void setLastStatement(Statement last){
+        if(last == null){
+            lastStatement = "";
+        }
+        else {
+            StringBuilder builder = new StringBuilder();
+            if(last.getSelf() != null){
+                Stream.of(last.getSelf())
+                        .forEach(token -> builder.append(token.getValue()));
+            }
+            lastStatement = builder.toString();
+        }
+    }
+    public String getLastStatement(){
+        return lastStatement;
+    }
     public void start(){
-        String source;
-        try(BufferedReader reader = new BufferedReader(new FileReader("source.pl"))){
-            StringBuilder strText = new StringBuilder();
-            String line;
-            while((line = reader.readLine()) != null)
-                strText.append(line).append("\n");
-            source = strText.toString();
-            Parser parser = new Parser(source);
-            parser.parse();
-            List<Statement> statements = parser.getStatements();
-            if(statements == null){
-                System.out.println("Syntax error");
-
+        Parser parser = new Parser(source);
+        parser.parse();
+        List<Statement> statements = parser.getStatements();
+        if(statements == null){
+            isCompleted = false;
+            setLastStatement(parser.getLastStatement());
+        }
+        else {
+            isCompleted = true;
+            setLastStatement(parser.getLastStatement());
+            for(Statement piece : statements){
+                dispatchStatement(piece);
             }
-            else {
-
-                for(Statement piece : statements){
-                    dispatchStatement(piece);
-                }
-                System.out.println("Operators");
-                for(var entry : operators.entrySet()){
-                    System.out.println(entry.getKey() + ": " + entry.getValue());
-                }
-                System.out.println("Operands");
-                for(var entry : operands.entrySet()){
-                    System.out.println(entry.getKey() + ": " + entry.getValue());
-                }
-            }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
 
     }
