@@ -93,7 +93,7 @@ public class TableBuilder {
                 case Digits, Variable, StringPlain -> {saveOperand(value);}
                 case FloatWord -> {
                     if(isSystemKeyword(value))
-                        saveOperator(value);
+                        saveOperand(value);
                     else
                         saveOperand(value + "()");
                 }
