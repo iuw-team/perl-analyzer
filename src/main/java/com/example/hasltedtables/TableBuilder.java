@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class TableBuilder {
 
@@ -43,6 +44,17 @@ public class TableBuilder {
             result.add(matcher.group());
         return result;
     }
+    private boolean isSystemKeyword(String value){
+        final List<String> list = List.of("STDIN", "STDERR", "STDOUT");
+        boolean result = false;
+        for(String keyword : list){
+            if(keyword.equals(value)){
+                result = true;
+                break;
+            }
+        }
+        return result;
+    }
     private void dispatchToken(Token token){
         if(token == null)
             return;
@@ -68,18 +80,28 @@ public class TableBuilder {
                     if(value.equals("["))
                         saveOperator("[@@index]");
                 }
-                case Keyword, Coma, Separator, Assignment, ComplexAssignment,
+                case Keyword -> {
+                         Stream.of("last", "redo", "next", "return")
+                         .filter(keyword -> keyword.equals(value))
+                         .findAny()
+                         .ifPresent(this::saveOperator);
+                }
+                case  Coma, Separator, Assignment, ComplexAssignment,
                              ArrowLambda, ArrowLink, Arithmetic, Logical,
                              Comparing, StringCmp, StringRep, StringCat,
                              ArrayRange -> {saveOperator(value);}
                 case Digits, Variable, StringPlain -> {saveOperand(value);}
-                case FloatWord -> saveOperand(value + "()");
+                case FloatWord -> {
+                    if(isSystemKeyword(value))
+                        saveOperator(value);
+                    else
+                        saveOperand(value + "()");
+                }
         }
     }
     private void dispatchStatement(Statement piece){
         String operator = null;
         Token[] self = piece.getSelf();
-        if(self != null && self.length != 0){
             switch(piece.type()){
                 case For -> {
                     operator = "for(;;)";
@@ -97,19 +119,14 @@ public class TableBuilder {
                     for(int i = 2; i < self.length - 1; i++)
                         dispatchToken(self[i]);
                 }
-                case If -> {
-                    operator = "if()";
+                case CommonIf -> {
+                    operator = "if-elsif-else";
+                }
+                case If, Elsif -> {
                     for(int i = 2; i < self.length - 1; i++)
                         dispatchToken(self[i]);
                 }
-                case Elsif -> {
-                    operator = "elsif()";
-                    for(int i = 2; i < self.length - 1; i++)
-                        dispatchToken(self[i]);
-                }
-                case Else -> {
-                    operator = "else";
-                }
+                case Else -> {}
                 case Import -> {}
                 case Line -> {
                     for (Token token : self)
@@ -125,7 +142,6 @@ public class TableBuilder {
                         operator = "{...}";
                 }
             }
-        }
         if(operator != null)
             saveOperator(operator);
         for(Statement child : piece.children())
@@ -142,8 +158,10 @@ public class TableBuilder {
             Parser parser = new Parser(source);
             parser.parse();
             List<Statement> statements = parser.getStatements();
-            if(statements == null)
+            if(statements == null){
                 System.out.println("Syntax error");
+
+            }
             else {
 
                 for(Statement piece : statements){

@@ -1,5 +1,7 @@
 package com.example.hasltedtables;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -9,7 +11,7 @@ import static com.example.hasltedtables.Token.Type;
 public class Parser {
     private Tokenizer tokenStream;
     private List<Statement> statements;
-    private String source;
+    private final String source;
     private List<Statement> freeStatements;
     public static final int OpenCircle = 0;
     public static final int ClosedCircle = 1;
@@ -17,6 +19,8 @@ public class Parser {
     public static final int ClosedCurly = 3;
     public static final int OpenSquare = 4;
     public static final int ClosedSquare = 5;
+    public static final int OpenTriangle = 6;
+    public static final int CloseTriangle = 7;
     public static final int VarScalar = 0;
     public static final int VarArray = 1;
     public static final int VarHash = 2;
@@ -81,22 +85,14 @@ public class Parser {
         Token token = tokenStream.nextToken();
         boolean result = false;
         switch (id){
-            case OpenCircle ->{
-                result = (token.getType() == Type.BracketCircle) && (token.getValue().equals("("));
-            }
-            case ClosedCircle -> {
-                result = (token.getType() == Type.BracketCircle) && (token.getValue().equals(")"));
-            }
-            case OpenCurly -> {
-                result = (token.getType() == Type.BracketCurly) && (token.getValue().equals("{"));
-            }
-            case ClosedCurly -> {
-                result = (token.getType() == Type.BracketCurly) && (token.getValue().equals("}"));
-            }
-            case OpenSquare ->
-                    result = (token.getType() == Type.BracketSquare) && (token.getValue().equals("["));
-            case ClosedSquare ->
-                    result = (token.getType() == Type.BracketSquare) && (token.getValue().equals("]"));
+            case OpenCircle -> result = (token.getType() == Type.BracketCircle) && (token.getValue().equals("("));
+            case ClosedCircle -> result = (token.getType() == Type.BracketCircle) && (token.getValue().equals(")"));
+            case OpenCurly -> result = (token.getType() == Type.BracketCurly) && (token.getValue().equals("{"));
+            case ClosedCurly -> result = (token.getType() == Type.BracketCurly) && (token.getValue().equals("}"));
+            case OpenSquare -> result = (token.getType() == Type.BracketSquare) && (token.getValue().equals("["));
+            case ClosedSquare -> result = (token.getType() == Type.BracketSquare) && (token.getValue().equals("]"));
+            case OpenTriangle -> result = (token.getType() == Type.Comparing) && (token.getValue().equals("<"));
+            case CloseTriangle -> result = (token.getType() == Type.Comparing) && (token.getValue().equals(">"));
         }
         if(!result)
             tokenStream.release();
@@ -173,7 +169,21 @@ public class Parser {
     }
 
     private boolean isPointerAccess(){
+        tokenStream.freeze();
+        //boolean isPointer = isVariable() && isPointerArrow() &&
+        tokenStream.release();
         return false;
+    }
+    private boolean isDataFlowExpr(){
+        tokenStream.freeze();
+        boolean isFile = isBracket(OpenTriangle) && isVariable() && isBracket(CloseTriangle);
+        if(!isFile)
+            isFile = refreshStream() && isBracket(OpenTriangle) && isFloatWord() && isBracket(CloseTriangle);
+        if(isFile)
+            tokenStream.boost();
+        else
+            tokenStream.release();
+        return isFile;
     }
     private boolean isHashAccess(){
         tokenStream.freeze();
@@ -203,7 +213,8 @@ public class Parser {
                     Type.Logical,
                     Type.StringCat,
                     Type.StringRep,
-                    Type.Comparing);
+                    Type.Comparing,
+                    Type.ArrayRange);
         for(Token.Type type : types){
             tokenStream.refresh();
             result = isEqualType(type);
@@ -220,7 +231,7 @@ public class Parser {
         if(!tokenStream.hasNext())
             return false;
         tokenStream.freeze();
-        boolean result = isFuncCall() || isHashAccess() || isArrayAccess() || isPointerAccess() || isVariable(); //last is not idempotante
+        boolean result = isFuncCall() || isHashAccess() || isArrayAccess() || isPointerAccess() || isDataFlowExpr() || isVariable(); //last is not idempotante
         if(!result){
             var types = List.of(Type.Digits, Type.StringInner, Type.StringPlain);
             for(Type type : types){
@@ -230,10 +241,11 @@ public class Parser {
                     break;
             }
         }
-        if(!result)
+        if (!result) {
             tokenStream.release();
-        else
+        } else {
             tokenStream.boost();
+        }
         return result;
     }
 
@@ -256,7 +268,7 @@ public class Parser {
     }
     private boolean isFuncParams(){
         tokenStream.freeze();
-        boolean result = (isExpression() || isInitialization()) && isComa() && isFuncParams();
+        boolean result = (isExpression() || isInitialization() || isDeclaration()) && isComa() && isFuncParams();
         if(!result){
             tokenStream.refresh();
             result = (isExpression() || isInitialization());
@@ -280,6 +292,22 @@ public class Parser {
             tokenStream.boost();
         }
         return result;
+    }
+    /**
+     * keyword that has impact to other construction in language
+     * eg. next, redo, last
+     * */
+    private boolean isFlowKeyword(){
+        tokenStream.freeze();
+        boolean isFlow = isKeyword("last") ||
+                         refreshStream() && isKeyword("next") ||
+                         refreshStream() && isKeyword("redo") ||
+                         refreshStream() && isKeyword("return") && isExpression();
+        if(isFlow)
+            tokenStream.boost();
+        else
+            tokenStream.release();
+        return isFlow;
     }
     private boolean isUntilStatement(){
         return isCondBodyStatement(Statement.Type.Until, "until");
@@ -313,8 +341,10 @@ public class Parser {
     }
     private boolean isLineStatement(){
         return isSingleStatement(Statement.Type.Line, o->{
-            return  (isAssignment() || isDeclaration() || isFuncCall() ||
-                    isExpression()) &&  isSeparator();
+            if (!isAssignment() && !isDeclaration() && !isExpression() && !isFuncCall()) {
+                isFlowKeyword();
+            }
+            return isSeparator();
         });
     }
 
@@ -490,6 +520,12 @@ public class Parser {
         }
         return hasBody;
     }
+public @Nullable Statement getLastStatement(){
+       if(statements == null) {
+           return freeStatements != null ? freeStatements.get(freeStatements.size() - 1) : null;
+       } else
+           return statements.get(statements.size() - 1);
+}
     private void build(){
 //        while(tokenStream.hasNext()){
             resetStatements();
