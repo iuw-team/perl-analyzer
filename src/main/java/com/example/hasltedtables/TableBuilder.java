@@ -54,6 +54,7 @@ public class TableBuilder {
         }
         return result;
     }
+    private boolean isFunctionCall = false;
     private void dispatchToken(Token token){
         if(token == null)
             return;
@@ -68,7 +69,7 @@ public class TableBuilder {
                     saveOperand(value);
                 }
                 case BracketCircle -> {
-                    if(value.equals("("))
+                    if(value.equals("(") && !isFunctionCall)
                         saveOperator("( )");
                 }
                 case BracketCurly -> {
@@ -91,12 +92,17 @@ public class TableBuilder {
                              ArrayRange -> {saveOperator(value);}
                 case Digits, Variable, StringPlain -> {saveOperand(value);}
                 case FloatWord -> {
-                    if(isSystemKeyword(value))
+                    if(isSystemKeyword(value)){
                         saveOperand(value);
-                    else
+                    }
+                    else {
                         saveOperator(value);
+                        isFunctionCall = true;
+                    }
                 }
         }
+        if(token.getType() != Token.Type.FloatWord)
+            isFunctionCall = false;
     }
     private void dispatchStatement(Statement piece){
         String operator = null;
@@ -128,11 +134,8 @@ public class TableBuilder {
                 case Else -> {}
                 case Import -> {}
                 case Line -> {
-                    dispatchToken(self[0]);
-                    if(self.length > 1){
-                        int index = self[0].getType() == Token.Type.FloatWord && self[1].getValue().equals("(") ? 2 : 1;
-                        for(int i = index; index < self.length; index += 1)
-                            dispatchToken(self[index]);
+                    for(Token token : self){
+                        dispatchToken(token);
                     }
                 }
                 case Function -> {
