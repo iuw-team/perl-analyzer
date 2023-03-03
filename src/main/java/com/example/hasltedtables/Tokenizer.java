@@ -62,6 +62,13 @@ public class Tokenizer {
             throw new RuntimeException(e);
         }
     }
+    /**cnt of tokens to skip
+     * */
+    public Token nextToken(int gapSize){
+        for(int i = 0; i < gapSize; i++)
+            this.nextToken();
+        return this.nextToken();
+    }
     /**
      * @return index in given token where next step should be started
      * */

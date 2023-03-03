@@ -3,7 +3,7 @@ package com.example.hasltedtables;
 public class Token {
     public enum Type {StringInner, StringPlain, BracketCircle, BracketCurly, BracketSquare, BracketTriangle, Keyword, Coma, Separator, Digits,
         Assignment, ComplexAssignment, ArrowLambda, ArrowLink, Arithmetic, Logical, Comparing, StringCmp, StringRep, StringCat, ArrayRange,
-        Variable, FloatWord,
+        Variable, FloatWord, HashKey, FlowKeyword, HashBrackets,
         Unknown
     };
     Token(String value, Type type){

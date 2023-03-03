@@ -2,10 +2,7 @@ package com.example.hasltedtables;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -74,8 +71,12 @@ public class TableBuilder {
                 }
                 case BracketCurly -> {
                     if(value.equals("{"))
-                        saveOperator("{ }");
+                        saveOperator("{?}");
                 }
+            case HashBrackets -> {
+                    if(value.equals("{"))
+                        saveOperator("{ }");
+            }
             case BracketTriangle -> {
                     if(value.equals("<"))
                         saveOperator("< >");
@@ -84,17 +85,11 @@ public class TableBuilder {
                     if(value.equals("["))
                         saveOperator("[ ]");
                 }
-                case Keyword -> {
-                         Stream.of("last", "redo", "next", "return")
-                         .filter(keyword -> keyword.equals(value))
-                         .findAny()
-                         .ifPresent(this::saveOperator);
-                }
                 case  Coma, Separator, Assignment, ComplexAssignment,
-                             ArrowLambda, ArrowLink, Arithmetic, Logical,
-                             Comparing, StringCmp, StringRep, StringCat,
-                             ArrayRange -> {saveOperator(value);}
-                case Digits, Variable, StringPlain -> {saveOperand(value);}
+                      ArrowLambda, ArrowLink, Arithmetic, Logical,
+                      Comparing, StringCmp, StringRep, StringCat,
+                      ArrayRange, FlowKeyword -> saveOperator(value);
+                case Digits, Variable, StringPlain, HashKey -> saveOperand(value);
                 case FloatWord -> {
                     if(isSystemKeyword(value)){
                         saveOperand(value);
@@ -113,18 +108,28 @@ public class TableBuilder {
         Token[] self = piece.getSelf();
             switch(piece.type()){
                 case For -> {
-                    operator = "for";
+                    operator = "for(;;)";
                     for(int i = 2; i < self.length - 1; i++)
                         if(!self[i].getValue().equals(";"))
                             dispatchToken(self[i]);
                 }
+                case Foreach -> {
+                    operator = "foreach()";
+                    boolean firstBracket = true;
+                    for(int i = 1; i < self.length - 1; i++){
+                        if(firstBracket && self[i].getValue().equals("("))
+                            firstBracket = false;
+                        else
+                            dispatchToken(self[i]);
+                    }
+                }
                 case While -> {
-                    operator = "while";
+                    operator = "while()";
                     for(int i = 2; i < self.length - 1;i++)
                         dispatchToken(self[i]);
                 }
                 case Until -> {
-                    operator = "until";
+                    operator = "until()";
                     for(int i = 2; i < self.length - 1; i++)
                         dispatchToken(self[i]);
                 }

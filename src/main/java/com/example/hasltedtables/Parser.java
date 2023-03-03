@@ -13,6 +13,8 @@ public class Parser {
     private List<Statement> statements;
     private final String source;
     private List<Statement> freeStatements;
+    public static final int CircleBrackets = 0;
+    public static final int CurlyBrackets = 1;
     public static final int OpenCircle = 0;
     public static final int ClosedCircle = 1;
     public static final int OpenCurly = 2;
@@ -21,6 +23,8 @@ public class Parser {
     public static final int ClosedSquare = 5;
     public static final int OpenTriangle = 6;
     public static final int CloseTriangle = 7;
+    public static final int OpenHash = 8;
+    public static final int CloseHash = 9;
     public static final int VarScalar = 0;
     public static final int VarArray = 1;
     public static final int VarHash = 2;
@@ -94,6 +98,8 @@ public class Parser {
             case ClosedSquare -> result = (type == Type.BracketSquare) && (token.getValue().equals("]"));
             case OpenTriangle -> result = (type == Type.Comparing || type == Type.BracketTriangle) && (token.getValue().equals("<"));
             case CloseTriangle -> result = (type == Type.Comparing || type == Type.BracketTriangle) && (token.getValue().equals(">"));
+            case OpenHash ->  result = (type == Type.BracketCurly || type == Type.HashBrackets) && (token.getValue().equals("{"));
+            case CloseHash ->  result = (type == Type.BracketCurly || type == Type.HashBrackets) && (token.getValue().equals("}"));
         }
         if(!result)
             tokenStream.release();
@@ -119,22 +125,59 @@ public class Parser {
     private boolean isAssignable(){
         return isExpression();
     }
-    private boolean isArrayInitialization(){
+    private boolean isArrayInitialization(int bracketType){
         tokenStream.freeze();
-        boolean result = isBracket(OpenCircle) && isFuncParams() && isBracket(ClosedCircle);
+        boolean result = false;
+        switch(bracketType){
+            case CircleBrackets -> result = isBracket(OpenCircle) && isFuncParams() && isBracket(ClosedCircle);
+            case CurlyBrackets -> result = isBracket(OpenCurly) && isFuncParams() && isBracket(ClosedCurly);
+        }
         if(result)
             tokenStream.boost();
         else
-            tokenStream.refresh();
+            tokenStream.release();
         return result;
     }
+    private boolean isTableEntries(){
+        Token hashKey;
+        if(!tokenStream.hasNext())
+            return true;
 
-    //todo: complete
+        tokenStream.freeze();
+        hashKey = tokenStream.nextToken();
+        if(hashKey.getType() !=  Type.HashKey && hashKey.getType() != Type.FloatWord){
+            tokenStream.release();
+            return true;
+        }
+        boolean isEntries = isLambdaArrow() && (isInitialization() || isExpression()) && isComa() && isTableEntries();
+        if(!isEntries){
+            tokenStream.refresh();
+            isFloatWord();//isFloatWord is dummy invoke to skip token
+            isEntries = isLambdaArrow() && (isInitialization() || isExpression());
+        }
+        if(isEntries){
+            hashKey.setType(Type.HashKey);
+            tokenStream.boost();
+        }
+        else
+            tokenStream.release();
+        return true;
+    }
     private boolean isTableInitialization(){
-        return false;
+        tokenStream.freeze();
+        boolean isHeader = isBracket(OpenCurly) && isTableEntries() && isBracket(ClosedCurly);
+        if(!isHeader){
+            tokenStream.refresh();
+            isHeader = isBracket(OpenCircle) && isTableEntries() && isBracket(OpenCircle);
+        }
+        if(isHeader)
+            tokenStream.boost();
+        else
+            tokenStream.release();
+        return isHeader;
     }
     private boolean isInitialization(){
-        return isArrayInitialization() || isTableInitialization();
+        return isTableInitialization() || isArrayInitialization(CircleBrackets) || isArrayInitialization(CurlyBrackets);
     }
     private boolean isStorageClass(){
         tokenStream.freeze();
@@ -171,8 +214,11 @@ public class Parser {
 
     private boolean isPointerAccess(){
         tokenStream.freeze();
-        //boolean isPointer = isVariable() && isPointerArrow() &&
-        tokenStream.release();
+        boolean isPointer = isVariable() && isPointerArrow() && isExpression(); //todo: replace with correct expression
+//        if(isPointer)
+//            tokenStream.boost();
+//        else
+            tokenStream.release();
         return false;
     }
     private boolean isDataFlowExpr(){
@@ -193,11 +239,16 @@ public class Parser {
     }
     private boolean isHashAccess(){
         tokenStream.freeze();
-        boolean result =  isVariable() && isBracket(OpenCurly) && isExpression() && isBracket(ClosedCurly);
+        boolean result = isVariable() && isBracket(OpenHash) && isExpression() && isBracket(CloseHash);
         if(!result)
             tokenStream.release();
-        else
+        else{
+            tokenStream.refresh();
+            tokenStream.nextToken(1).setType(Type.HashBrackets);
+            isExpression();
+            tokenStream.nextToken().setType(Type.HashBrackets);
             tokenStream.boost();
+        }
         return result;
     }
     private boolean isArrayAccess(){
@@ -304,11 +355,20 @@ public class Parser {
      * eg. next, redo, last
      * */
     private boolean isFlowKeyword(){
+        Token flowKeyword;
+        String keyValue;
         tokenStream.freeze();
-        boolean isFlow = isKeyword("last") ||
-                         refreshStream() && isKeyword("next") ||
-                         refreshStream() && isKeyword("redo") ||
-                         refreshStream() && isKeyword("return") && isExpression();
+        if(!tokenStream.hasNext() || (flowKeyword = tokenStream.nextToken()).getType() != Type.FlowKeyword){
+            tokenStream.release();
+            return false;
+        }
+        keyValue = flowKeyword.getValue();
+        boolean isFlow = keyValue.equals("last") ||
+                         keyValue.equals("next") ||
+                         keyValue.equals("redo") ||
+                         keyValue.equals("return") && isExpression();
+                                 //todo: replace isExpression to FuncParams
+                                 //todo: change FuncParams to check brackets
         if(isFlow)
             tokenStream.boost();
         else
@@ -353,7 +413,23 @@ public class Parser {
             return isSeparator();
         });
     }
-
+    private boolean isForeachStatement(){
+        return isVCondBodyStatement(Statement.Type.Foreach, o->{
+            boolean isHeader = isKeyword("foreach");
+            if(isHeader){
+                tokenStream.freeze();
+                isHeader = (isStorageClass() && isVariable()) ||
+                           (refreshStream() && isVariable());
+                if(isHeader)
+                    tokenStream.boost();
+                else
+                    tokenStream.release();
+                isHeader = true;
+            }
+            isHeader = isHeader && isBracket(OpenCircle) && (isFuncParams() || isExpression()) && isBracket(ClosedCircle);
+            return isHeader;
+        });
+    }
     /**
      * @param cond (Object is always null)
      */
@@ -473,8 +549,8 @@ public class Parser {
         });
     }
     private boolean isStatements(){
-        boolean hasStatement = (isIfStatement() || isUntilStatement()
-                || isWhileStatement() || isForStatement() ||
+        boolean hasStatement = (isIfStatement() || isUntilStatement() ||
+                isWhileStatement() || isForStatement() || isForeachStatement() ||
                 isLineStatement() || isFuncDeclaration() || isImport());
         if(hasStatement){
             List<Statement> group = new ArrayList<>(freeStatements);

@@ -12,7 +12,7 @@ for(my $i=9; $i != 0; $i-=1){
         print "Almost";
     }
 }
-my $other = <in>;
+my $other = <$in>;
 my $longString = "Hello $userName! How your $other";
 my @animals = ("camel", "llama", "owl");
 my $x = @animals;
