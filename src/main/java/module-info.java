@@ -5,8 +5,8 @@ module com.example.hasltedtables {
     requires org.controlsfx.controls;
     requires net.synedra.validatorfx;
     requires com.google.gson;
-		requires annotations;
+    requires annotations;
 
-		opens com.example.hasltedtables to javafx.fxml;
+    opens com.example.hasltedtables to javafx.fxml;
     exports com.example.hasltedtables;
 }
