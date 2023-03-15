@@ -1,4 +1,4 @@
-package com.example.hasltedtables;
+package com.example.parser;
 
 import java.util.ArrayList;
 import java.util.List;

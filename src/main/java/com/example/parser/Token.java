@@ -1,7 +1,7 @@
-package com.example.hasltedtables;
+package com.example.parser;
 
 public class Token {
-    public enum Type {StringInner, StringPlain, BracketCircle, BracketCurly, BracketSquare, BracketTriangle, Keyword, Coma, Separator, Digits,
+    public enum Type {StringInner, StringPlain, BracketCircle, BracketCurly, BracketSquare, BracketTriangle, Keyword, Coma, Separator, Number,
         Assignment, ComplexAssignment, ArrowLambda, ArrowLink, Arithmetic, Logical, Comparing, StringCmp, StringRep, StringCat, ArrayRange,
         Variable, FloatWord, HashKey, FlowKeyword, HashBrackets,
         Unknown
@@ -22,5 +22,5 @@ public class Token {
     }
 
     private String value;
-    private Token.Type type;
+    private Type type;
 }

@@ -1,5 +1,4 @@
-package com.example.hasltedtables;
-
+package com.example.parser;
 public class JsonRule {
     public Token.Type type;
     public String rule;
