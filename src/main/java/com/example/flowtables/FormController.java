@@ -2,6 +2,7 @@ package com.example.flowtables;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -37,13 +38,13 @@ private TableBuilder builder;
 @FXML
 void onAnalyzeClicked() {
       if (btnStart.isDisable()) {
-	    sendMessage("Program error", "");
 	    return;
       }
       builder.start();
       if(!builder.isCompleted()){
 	    String info = String.format("Syntax error after %s statement", builder.getLastStatement());
 	    sendMessage("Syntax error", info);
+	    disableForm();
 	    return;
       }
       editAbsoluteCnt.setText(String.valueOf(builder.getBranchCnt()));
@@ -107,6 +108,12 @@ private @Nullable String getFileContent(File file) {
       return result;
 }
 
-private void sendMessage(String title, String text) {
+private void sendMessage(String title, String info){
+      Alert alert = new Alert(Alert.AlertType.INFORMATION);
+      alert.setTitle(title);
+      alert.setHeaderText("");
+      alert.setContentText(info);
+      alert.showAndWait();//.ifPresent(rs -> {});
+}
 
-}}
+}
