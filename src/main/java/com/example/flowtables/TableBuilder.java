@@ -203,7 +203,18 @@ private void dispatchStatement(Statement piece) {
 	    dispatchStatement(child);
 }
 
-
+public Map<String, Integer> getSpenMap(){
+      Map<String, Integer> copy = new HashMap<>(spenMap);
+      copy.forEach((k, v) -> copy.put(k, v - 1));
+      return copy;
+}
+public Integer getSpenSum(){
+      Integer bufferSum = 0;
+      for(var entry : getSpenMap().entrySet()){
+	    bufferSum += entry.getValue();
+      }
+      return bufferSum;
+}
 public int getBranchCnt() {
       return condStatCnt;
 }
