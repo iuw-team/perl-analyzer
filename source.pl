@@ -6,10 +6,14 @@ open(my $in, "<", "animals.back") or die "Can't open config file";
 print "Enter your name";
 my $userName = <STDIN>;
 chomp $userName;
-for(my $i=9; $i != 0; $i-=1){
+my $begemot = 1;
+for(my $crocodile=9; $i != 0; $begemot-=1){
     print "$i\n";
     if($i == 4){
         print "Almost";
+    }
+    else {
+        print "Other branch";
     }
 }
 my $other = <$in>;
@@ -38,4 +42,3 @@ sub getOtherNumber{
          $number = 42;
       }
        return $number;
-}

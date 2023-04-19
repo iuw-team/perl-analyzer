@@ -26,7 +26,9 @@ public static final int ClosedSquare = 5;
 public static final int OpenTriangle = 6;
 public static final int CloseTriangle = 7;
 public static final int OpenHash = 8;
-public static final int CloseHash = 9;
+public static final int ClosedHash = 9;
+public static final int OpenVarGroup = 10;
+public static final int ClosedVarGroup = 11;
 public static final int VarScalar = 0;
 public static final int VarArray = 1;
 public static final int VarHash = 2;
@@ -108,8 +110,8 @@ private boolean isBracket(int id) {
       Type type = token.getType();
       boolean result = false;
       switch (id) {
-	    case OpenCircle -> result = (type == Type.BracketCircle) && (token.getValue().equals("("));
-	    case ClosedCircle -> result = (token.getType() == Type.BracketCircle) && (token.getValue().equals(")"));
+	    case OpenCircle -> result = (token.getValue().equals("("));
+	    case ClosedCircle -> result = (token.getValue().equals(")"));
 	    case OpenCurly -> result = (type == Type.BracketCurly) && (token.getValue().equals("{"));
 	    case ClosedCurly -> result = (type == Type.BracketCurly) && (token.getValue().equals("}"));
 	    case OpenSquare -> result = (type == Type.BracketSquare) && (token.getValue().equals("["));
@@ -120,7 +122,7 @@ private boolean isBracket(int id) {
 		result = (type == Type.Comparing || type == Type.BracketTriangle) && (token.getValue().equals(">"));
 	    case OpenHash ->
 		result = (type == Type.BracketCurly || type == Type.HashBrackets) && (token.getValue().equals("{"));
-	    case CloseHash ->
+	    case ClosedHash ->
 		result = (type == Type.BracketCurly || type == Type.HashBrackets) && (token.getValue().equals("}"));
       }
       if (!result)
@@ -160,10 +162,15 @@ private boolean isVarEnum(){
 private boolean isVarGroup(){
       tokenStream.freeze();
       boolean isGroup = isBracket(OpenCircle) && isVarEnum() && isBracket(ClosedCircle);
-      if(!isGroup)
+      if(!isGroup) {
 	    tokenStream.release();
-      else
+      } else {
+	    tokenStream.refresh();
+	    tokenStream.nextToken().setType(Type.BracketVarGroup);
+	    isVarEnum();
+	    tokenStream.nextToken().setType(Type.BracketVarGroup);
 	    tokenStream.boost();
+      }
       return isGroup;
 }
 private boolean isAssignable() {
@@ -294,7 +301,7 @@ private boolean isDataFlowExpr() {
 
 private boolean isHashAccess() {
       tokenStream.freeze();
-      boolean result = isVariable() && isBracket(OpenHash) && isExpression() && isBracket(CloseHash);
+      boolean result = isVariable() && isBracket(OpenHash) && isExpression() && isBracket(ClosedHash);
       if (!result)
 	    tokenStream.release();
       else {

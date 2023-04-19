@@ -48,7 +48,7 @@ void onAnalyzeClicked() {
 	    return;
       }
       editAbsoluteCnt.setText(String.valueOf(builder.getBranchCnt()));
-      editNestLevel.setText(String.valueOf(builder.getNestLevel()));
+//      editNestLevel.setText(String.valueOf(builder.getNestLevel()));
       lblCommonCnt.setText(String.valueOf(builder.getCommonCnt()));
       float density = (float) builder.getBranchCnt() / builder.getCommonCnt();
       editDensity.setText(String.format("%.3f", density));
