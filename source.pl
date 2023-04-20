@@ -25,6 +25,8 @@ else {
 my @animals = ("camel", "llama", "owl");
 push @animals, $userPet;
 close($in);
+$none = <$in>;
+$none = 11;
 #for(my $i=9; $i != 0; $i-=1){
 #    print "$i\n";
 #    if($i == 4){

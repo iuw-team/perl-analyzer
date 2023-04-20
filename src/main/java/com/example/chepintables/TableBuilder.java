@@ -109,7 +109,10 @@ private void setSpen(String token) {
 private boolean isUpdate(TokenGroup old, TokenGroup upd) {
       if (old == upd)
 	    return false;
-      return (upd == TokenGroup.Control || (upd == TokenGroup.Modifiable && old != TokenGroup.Control));
+      return ((upd == TokenGroup.Control) ||
+		  (upd == TokenGroup.Modifiable && old != TokenGroup.Control) ||
+		  (old == TokenGroup.Param)
+      );
 }
 
 /**
@@ -167,7 +170,7 @@ private void markTokens(@NotNull Token[] tokens, int offset, int length, TokenGr
  * if token is absent ― -1 is return
  */
 private int indexOf(Token[] tokens, int offset, Type searchType) {
-      int index = 0;
+      int index = offset;
       while (index < tokens.length && tokens[index].getType() != searchType) {
 	    index += 1;
       }
