@@ -1,4 +1,4 @@
-package com.example.flowtables;
+package com.example.chepintables;
 
 import com.example.parser.Parser;
 import com.example.parser.Statement;
