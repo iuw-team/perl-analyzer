@@ -112,7 +112,21 @@ private boolean isUpdate(TokenGroup old, TokenGroup upd) {
       return (upd == TokenGroup.Control || (upd == TokenGroup.Modifiable && old != TokenGroup.Control));
 }
 
-private void markVariable(String token, TokenGroup group, boolean isOutput) {
+/**
+ * Each token by default has NO_OUTPUT_STATUS<br>
+ * This function mark token is OUTPUT
+ *
+ * @return -> the token status was changed or not
+ */
+private boolean setIOStatus(String token) {
+      TokenState state = stateMap.get(token);
+      if (state != null) {
+	    state.setOutputState(true);
+      }
+      return token != null;
+}
+
+private void markVariable(String token, TokenGroup group) {
       setSpen(token);
       TokenState state = stateMap.getOrDefault(token, new TokenState(token, group));
       if (isUpdate(state.group(), group)) {
@@ -120,34 +134,68 @@ private void markVariable(String token, TokenGroup group, boolean isOutput) {
       }
       if (group == TokenGroup.Param && state.group() == TokenGroup.Temp)
 	    state.setGroup(TokenGroup.Modifiable);
-      state.setOutputState(isOutput);
       stateMap.put(token, state);
 }
 
-private void markInnerString(Token innerString) {
+private void markInnerString(Token innerString, boolean ioStatus) {
       extractVariables(innerString.getValue())
 	  .forEach(t -> {
-		markVariable(t, TokenGroup.Param, true);
+		markVariable(t, TokenGroup.Param);
+		if (ioStatus)
+		      setIOStatus(t);
 	  });
 }
 
-private void markTokens(@NotNull Token[] tokens, TokenGroup group) {
-      markTokens(tokens, 0, tokens.length, group);
-}
-
-private void markTokens(@NotNull Token[] tokens, int offset, int length, TokenGroup group) {
+private void markTokens(@NotNull Token[] tokens, int offset, int length, TokenGroup group, boolean ioStatus) {
       length = Math.min(tokens.length, offset + length);
-      boolean outputState = group == TokenGroup.Param;
       for (int i = offset; i < length; i++) {
 	    var token = tokens[i];
-	    if (token.getType() == Type.Variable)
-		  markVariable(token.getValue(), group, outputState);
-	    else if (token.getType() == Type.StringInner) {
-		  markInnerString(token); //if variable is used in innerString
+	    if (token.getType() == Type.Variable) {
+		  markVariable(token.getValue(), group);
+		  if (ioStatus)
+			setIOStatus(token.getValue());
+	    } else if (token.getType() == Type.StringInner) {
+		  markInnerString(token, ioStatus); //if variable is used in innerString
 		  //that means that this variable is used as output
 		  //By other words, to put data to other destination
 	    }
       }
+}
+
+/**
+ * @return first index of token
+ * if token is absent ― -1 is return
+ */
+private int indexOf(Token[] tokens, int offset, Type searchType) {
+      int index = 0;
+      while (index < tokens.length && tokens[index].getType() != searchType) {
+	    index += 1;
+      }
+      if (index == tokens.length)
+	    index = -1;
+      return index;
+}
+
+//tokens are used in output functions
+private boolean isOutputStatement(Token[] tokens, int offset) {
+      final List<String> outputList = List.of("print", "read");
+      int index = indexOf(tokens, offset, Type.FloatWord);
+      boolean result = false;
+      if(index != -1){
+	    result = outputList.contains(tokens[index].getValue());
+      }
+      return result;
+}
+
+//tokens are used in IO statement that means that tokens are IO
+//return Assignable Token
+//assumption that it's directly assignment
+private boolean isIOAssignment(Token[] tokens, int offset) {
+      boolean isFound = false;
+      for (int i = offset; i < tokens.length && !isFound; i++) {
+	    isFound = tokens[i].getType() == Type.BracketTriangle;
+      }
+      return isFound;
 }
 
 private void markLineStatement(Token[] tokens) {
@@ -155,24 +203,33 @@ private void markLineStatement(Token[] tokens) {
       int i;
       for (i = 0; i < tokens.length && !isRValue; i++) {
 	    if (tokens[i].getType() == Type.Assignment) {
-		  if (tokens[i].getType() == Type.BracketVarGroup) {//it's var enum
+		  TokenGroup assignableGroup = TokenGroup.Temp;
+		  boolean ioStatus = false;
+		  if (isIOAssignment(tokens, i + 1)) {
+			assignableGroup = TokenGroup.Param;
+			ioStatus = true;
+		  }
+		  if (tokens[i - 1].getType() == Type.BracketVarGroup) {//it's var enum
 			int j = i - 1;
 			while (tokens[j].getType() != Type.BracketVarGroup)
 			      j -= 1;
 			j += 1; //to params offset
-			markTokens(tokens, j, i - j, TokenGroup.Temp);
+			markTokens(tokens, j, i - j, assignableGroup, ioStatus);
 		  } else {
-			markVariable(tokens[i - 1].getValue(), TokenGroup.Temp, false);
+			markVariable(tokens[i - 1].getValue(), assignableGroup); //it's single variable in assignment
+			if (ioStatus)
+			      setIOStatus(tokens[i - 1].getValue());
 		  }
 		  isRValue = true;
 	    } else if (tokens[i].getType() == Type.ComplexAssignment) {
-		  markVariable(tokens[i - 1].getValue(), TokenGroup.Modifiable, false);
+		  markVariable(tokens[i - 1].getValue(), TokenGroup.Modifiable);
 		  isRValue = true;
 	    }
       }
       if (!isRValue)
 	    i = 0;
-      markTokens(tokens, i, tokens.length - i, TokenGroup.Param);
+      boolean ioStatus = isOutputStatement(tokens, i);
+      markTokens(tokens, i, tokens.length - i, TokenGroup.Param, ioStatus);
 }
 
 private void markForStatement(Token[] tokens) {
@@ -186,7 +243,7 @@ private void markForStatement(Token[] tokens) {
 		  int j = i + 1;
 		  while (tokens[j].getType() != Type.Separator)
 			j += 1;
-		  markTokens(tokens, i, j - i, TokenGroup.Param);
+		  markTokens(tokens, i, j - i, TokenGroup.Param, false);
 		  i = j - 1;
 		  continue;
 	    }
@@ -206,7 +263,8 @@ private void markForStatement(Token[] tokens) {
 private void dispatchStatement(Statement piece) {
       switch (piece.type()) {
 	    case For -> markForStatement(piece.getSelf());
-	    case While, If, Elsif, Until, Foreach -> markTokens(piece.getSelf(), TokenGroup.Control);
+	    case While, If, Elsif, Until, Foreach ->
+		markTokens(piece.getSelf(), 0, piece.getSelf().length, TokenGroup.Control, false);
 	    case Line -> markLineStatement(piece.getSelf());
       }
       for (var child : piece.children())

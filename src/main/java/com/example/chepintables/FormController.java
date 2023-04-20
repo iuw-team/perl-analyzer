@@ -146,7 +146,6 @@ void onAnalyzeClicked() {
       if (btnStart.isDisable()) {
 	    return;
       }
-      boolean isFormDisabled = false;
       String content;
       if(chosenFile != null && (content = getFileContent(chosenFile)) != null){
 	    updateBuilder(content);
@@ -158,14 +157,10 @@ void onAnalyzeClicked() {
 	    } else {
 		  String info = String.format("Syntax error after %s statement", builder.getLastStatement());
 		  sendMessage("Syntax error", info);
-		  isFormDisabled = true;
 	    }
       } else {
 	    sendMessage("File input error", "Last chosen file is not exists");
-	    isFormDisabled = true;
       }
-      if(isFormDisabled)
-	    disableForm();
 }
 
 @FXML
