@@ -7,6 +7,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -145,16 +146,26 @@ void onAnalyzeClicked() {
       if (btnStart.isDisable()) {
 	    return;
       }
-      builder.start();
-      if (builder.isCompleted()) {
-	    setSpen(builder.getSpenMap());
-	    setFullChepin(builder.getFullChepinMap());
-	    setIOChepin(builder.getIOChepinMap());
+      boolean isFormDisabled = false;
+      String content;
+      if(chosenFile != null && (content = getFileContent(chosenFile)) != null){
+	    updateBuilder(content);
+	    builder.start();
+	    if(builder.isCompleted()){
+		  setSpen(builder.getSpenMap());
+		  setFullChepin(builder.getFullChepinMap());
+		  setIOChepin(builder.getIOChepinMap());
+	    } else {
+		  String info = String.format("Syntax error after %s statement", builder.getLastStatement());
+		  sendMessage("Syntax error", info);
+		  isFormDisabled = true;
+	    }
       } else {
-	    String info = String.format("Syntax error after %s statement", builder.getLastStatement());
-	    sendMessage("Syntax error", info);
-	    disableForm();
+	    sendMessage("File input error", "Last chosen file is not exists");
+	    isFormDisabled = true;
       }
+      if(isFormDisabled)
+	    disableForm();
 }
 
 @FXML
@@ -167,13 +178,13 @@ void onFileClose(ActionEvent event) {
       disableForm();
 }
 
+private File chosenFile;
 @FXML
 void onFileOpen(ActionEvent event) {
       FileChooser chooser = new FileChooser();
       File file = chooser.showOpenDialog(FormController.stage);
-      String content;
-      if (file != null && file.canRead() && (content = getFileContent(file)) != null) {
-	    updateBuilder(content);
+      if (file != null && file.canRead()) {
+	    chosenFile = file;
 	    activeForm(file.getAbsolutePath());
       }
 }
@@ -196,7 +207,7 @@ private void disableForm() {
       lblChosenFile.setText("Файл не выбран");
 }
 
-private @Nullable String getFileContent(File file) {
+private @Nullable String getFileContent(@NotNull File file) {
       String result = null;
       try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 	    StringBuilder strText = new StringBuilder();
