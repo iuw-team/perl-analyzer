@@ -41,17 +41,20 @@ void onAnalyzeClicked() {
 	    return;
       }
       builder.start();
-      if(!builder.isCompleted()){
+      if(builder.isCompleted()){
+
+
+      } else {
 	    String info = String.format("Syntax error after %s statement", builder.getLastStatement());
 	    sendMessage("Syntax error", info);
 	    disableForm();
-	    return;
       }
-      editAbsoluteCnt.setText(String.valueOf(builder.getBranchCnt()));
-//      editNestLevel.setText(String.valueOf(builder.getNestLevel()));
-      lblCommonCnt.setText(String.valueOf(builder.getCommonCnt()));
-      float density = (float) builder.getBranchCnt() / builder.getCommonCnt();
-      editDensity.setText(String.format("%.3f", density));
+
+//      editAbsoluteCnt.setText(String.valueOf(builder.getBranchCnt()));
+////      editNestLevel.setText(String.valueOf(builder.getNestLevel()));
+//      lblCommonCnt.setText(String.valueOf(builder.getCommonCnt()));
+//      float density = (float) builder.getBranchCnt() / builder.getCommonCnt();
+//      editDensity.setText(String.format("%.3f", density));
 
 }
 

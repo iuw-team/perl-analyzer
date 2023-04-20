@@ -18,10 +18,25 @@ public enum TokenGroup {Param, Modifiable, Control, Temp}
 private static class TokenState {
       private final String self;
       private TokenGroup group;
+      private boolean isOutput;
 
       public TokenState(String token, TokenGroup group) {
 	    this.self = token;
 	    this.group = group;
+	    this.isOutput = false; //was set yet
+      }
+
+      /**
+       * It's impossible to change outputState lower then output
+       * Once was be used in Output session, the output state is saved permanently
+       */
+      public void setOutputState(boolean isOutput) {
+	    if (!this.isOutput) //why is not true proceed to set
+		  this.isOutput = isOutput;
+      }
+
+      public boolean isOutput() {
+	    return isOutput;
       }
 
       public TokenGroup group() {
@@ -70,13 +85,6 @@ private boolean isSystemKeyword(String value) {
       return result;
 }
 
-private int regStatCnt;
-private int condStatCnt;
-
-private void updateStat(int dtReg, int dtCond) {
-      regStatCnt += dtReg;
-      condStatCnt += dtCond;
-}
 
 private List<String> extractVariables(@NotNull String innerString) {
       Pattern pattern = Pattern.compile("(\\\\)?\\$[a-zA-Z_][a-zA-Z_0-9]*");
@@ -104,7 +112,7 @@ private boolean isUpdate(TokenGroup old, TokenGroup upd) {
       return (upd == TokenGroup.Control || (upd == TokenGroup.Modifiable && old != TokenGroup.Control));
 }
 
-private void markVariable(String token, TokenGroup group) {
+private void markVariable(String token, TokenGroup group, boolean isOutput) {
       setSpen(token);
       TokenState state = stateMap.getOrDefault(token, new TokenState(token, group));
       if (isUpdate(state.group(), group)) {
@@ -112,13 +120,14 @@ private void markVariable(String token, TokenGroup group) {
       }
       if (group == TokenGroup.Param && state.group() == TokenGroup.Temp)
 	    state.setGroup(TokenGroup.Modifiable);
+      state.setOutputState(isOutput);
       stateMap.put(token, state);
 }
 
 private void markInnerString(Token innerString) {
       extractVariables(innerString.getValue())
 	  .forEach(t -> {
-		markVariable(t, TokenGroup.Param);
+		markVariable(t, TokenGroup.Param, true);
 	  });
 }
 
@@ -128,10 +137,11 @@ private void markTokens(@NotNull Token[] tokens, TokenGroup group) {
 
 private void markTokens(@NotNull Token[] tokens, int offset, int length, TokenGroup group) {
       length = Math.min(tokens.length, offset + length);
+      boolean outputState = group == TokenGroup.Param;
       for (int i = offset; i < length; i++) {
 	    var token = tokens[i];
 	    if (token.getType() == Type.Variable)
-		  markVariable(token.getValue(), group);
+		  markVariable(token.getValue(), group, outputState);
 	    else if (token.getType() == Type.StringInner) {
 		  markInnerString(token); //if variable is used in innerString
 		  //that means that this variable is used as output
@@ -152,11 +162,11 @@ private void markLineStatement(Token[] tokens) {
 			j += 1; //to params offset
 			markTokens(tokens, j, i - j, TokenGroup.Temp);
 		  } else {
-			markVariable(tokens[i - 1].getValue(), TokenGroup.Temp);
+			markVariable(tokens[i - 1].getValue(), TokenGroup.Temp, false);
 		  }
 		  isRValue = true;
-	    } else if(tokens[i].getType() == Type.ComplexAssignment){
-		  markVariable(tokens[i - 1].getValue(), TokenGroup.Modifiable);
+	    } else if (tokens[i].getType() == Type.ComplexAssignment) {
+		  markVariable(tokens[i - 1].getValue(), TokenGroup.Modifiable, false);
 		  isRValue = true;
 	    }
       }
@@ -203,24 +213,34 @@ private void dispatchStatement(Statement piece) {
 	    dispatchStatement(child);
 }
 
-public Map<String, Integer> getSpenMap(){
+public Map<String, Integer> getSpenMap() {
       Map<String, Integer> copy = new HashMap<>(spenMap);
       copy.forEach((k, v) -> copy.put(k, v - 1));
       return copy;
 }
-public Integer getSpenSum(){
+
+public Integer getSpenSum() {
       Integer bufferSum = 0;
-      for(var entry : getSpenMap().entrySet()){
+      for (var entry : getSpenMap().entrySet()) {
 	    bufferSum += entry.getValue();
       }
       return bufferSum;
 }
-public int getBranchCnt() {
-      return condStatCnt;
+
+
+public Map<String, TokenGroup> getFullChepinMap() {
+      Map<String, TokenGroup> map = new HashMap<>();
+      stateMap.forEach((key, value) -> map.put(key, value.group()));
+      return map;
 }
 
-public int getCommonCnt() {
-      return regStatCnt;
+public Map<String, TokenGroup> getIOChepinMap() {
+      Map<String, TokenGroup> map = new HashMap<>();
+      stateMap.forEach((key, value) -> {
+	    if (value.isOutput)
+		  map.put(key, value.group());
+      });
+      return map;
 }
 
 public void setSource(String source) {
