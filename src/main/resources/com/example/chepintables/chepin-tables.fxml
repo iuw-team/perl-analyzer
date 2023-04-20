@@ -102,7 +102,21 @@
                   </AnchorPane>
                 <AnchorPane minHeight="132.0" minWidth="0.0" prefHeight="132.0" prefWidth="598.0">
                      <children>
-                        <SplitPane dividerPositions="0.5" prefHeight="182.0" prefWidth="598.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                        <AnchorPane prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                           <children>
+                              <Label text="Полная метрика" AnchorPane.leftAnchor="80.0" AnchorPane.topAnchor="0.0">
+                                 <font>
+                                    <Font size="17.0" />
+                                 </font>
+                              </Label>
+                              <Label layoutX="125.0" layoutY="-7.0" text="Метрика ввода/вывода" AnchorPane.rightAnchor="55.0" AnchorPane.topAnchor="0.0">
+                                 <font>
+                                    <Font size="17.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </AnchorPane>
+                        <SplitPane dividerPositions="0.5" prefHeight="182.0" prefWidth="598.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="25.0">
                           <items>
                             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
                                  <children>

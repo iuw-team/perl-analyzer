@@ -7,7 +7,6 @@ print "Enter your name";
 my $userName = <STDIN>;
 chomp $userName;
 my $begemot = 1;
-$begemot += 12;
 for(my $crocodile=9; $i != 0; $begemot-=1){
     print "$i\n";
     if($i == 4){
@@ -29,3 +28,18 @@ if (($x < 11) || ($y > 11)){
         print"Let's me do some magic";
     }
 }
+#sub getHugeNumber{
+#    my @array = ();
+#    my $arrayLength = 10;
+#    for(my $i = 1; $i <= $arrayLength; $i += 1){
+#        push @array, int(rand(42));
+#    }
+#    return $array[int($arrayLength)];
+#}
+#sub getOtherNumber{
+#      my $number = getHugeNumber();
+#      if($number < 777){
+#         $number = 42;
+#      }
+#return $number;
+#}
